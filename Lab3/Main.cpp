@@ -56,14 +56,7 @@ SyncQueue* inputQueue() {
 	return new SyncQueue(size);
 }
 
-int main() {
-	setlocale(LC_ALL, ".1251");
-
-	start = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-	SyncQueue* queue = inputQueue();
-
-
+HANDLE* createProducers(SyncQueue* queue) {
 	cout << "¬ведите кол-во потков producer: ";
 	int pNum = 0;
 	cin >> pNum;
@@ -80,8 +73,10 @@ int main() {
 		pData[i].queue = queue;
 		producers[i] = CreateThread(NULL, 0, producer, (void*)&pData[i], NULL, NULL);
 	}
+	return producers;
+}
 
-
+HANDLE* createConsumers(SyncQueue* queue) {
 	cout << "¬ведите кол-во потков consumer: ";
 	int cNum = 0;
 	cin >> cNum;
@@ -97,11 +92,33 @@ int main() {
 		cData[i].queue = queue;
 		consumers[i] = CreateThread(NULL, 0, consumer, (void*)&cData[i], NULL, NULL);
 	}
+	return consumers;
+}
 
+void clear(HANDLE* data) {
 
+	if (data != nullptr) {
+		for (int i = 0; i < sizeof(data) / sizeof(data[0]); i++)
+			CloseHandle(data[i]);
+		delete data;
+	}
+}
+
+int main() {
+	setlocale(LC_ALL, ".1251");
+
+	start = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+	SyncQueue* queue = inputQueue();
+
+	HANDLE* producers = createProducers(queue);
+	HANDLE* consumers = createConsumers (queue);
+	
 	SetEvent(start);
 
-	WaitForMultipleObjects(pNum, producers, TRUE, INFINITE);
-	WaitForMultipleObjects(cNum, consumers, TRUE, INFINITE);
+	WaitForMultipleObjects(sizeof(producers) / sizeof(producers[0]), producers, TRUE, INFINITE);
+	WaitForMultipleObjects(sizeof(consumers) / sizeof(consumers[0]), consumers, TRUE, INFINITE);
+	clear(producers);
+	clear(consumers);
 	return 0;
 }

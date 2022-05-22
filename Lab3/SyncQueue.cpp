@@ -15,34 +15,34 @@ SyncQueue::SyncQueue(int nSize) {
 		this->nSize = 0;
 		currentPos = 0;
 	}
-	full = CreateSemaphore(NULL, 0, nSize, NULL);
-	empty = CreateSemaphore(NULL, nSize, nSize, NULL);
+	removeSemaphore = CreateSemaphore(NULL, 0, nSize, NULL);
+	insertSemaphore = CreateSemaphore(NULL, nSize, nSize, NULL);
 	InitializeCriticalSection(&cs);
 }
 
 SyncQueue::~SyncQueue() {
 	DeleteCriticalSection(&cs);
-	CloseHandle(empty);
-	CloseHandle(full);
+	CloseHandle(insertSemaphore);
+	CloseHandle(removeSemaphore);
 	if (array != nullptr)
 		delete array;
 }
 
 void SyncQueue::Insert(int nElement) {
-	WaitForSingleObject(empty, INFINITE);
+	WaitForSingleObject(insertSemaphore, 1000);
 
 	EnterCriticalSection(&cs);
 	if (currentPos < nSize) {
 		array[currentPos] = nElement;
 		++currentPos;
 
-		ReleaseSemaphore(full, 1, NULL);
+		ReleaseSemaphore(removeSemaphore, 1, NULL);
 	}
 	LeaveCriticalSection(&cs);
 }
 
 int SyncQueue::Remove() {
-	WaitForSingleObject(full, INFINITE);
+	WaitForSingleObject(removeSemaphore, INFINITE);
 
 	EnterCriticalSection(&cs);
 	if (currentPos > 0) {
@@ -51,12 +51,13 @@ int SyncQueue::Remove() {
 		--currentPos;
 
 		LeaveCriticalSection(&cs);
-		ReleaseSemaphore(empty, 1, NULL);
+		ReleaseSemaphore(insertSemaphore, 1, NULL);
 
 		return r;
 	}
 
 	LeaveCriticalSection(&cs);
 
-	return 0;
+	return -1;
 }
+

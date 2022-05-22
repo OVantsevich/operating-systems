@@ -7,11 +7,11 @@ public:
 	void Insert(int nElement);
 	int Remove();
 private:
-	bool close;
 	int* array;
 	int currentPos;
 	int nSize;
-	HANDLE full;
-	HANDLE empty;
+	HANDLE insertSemaphore;
+	HANDLE removeSemaphore;
 	CRITICAL_SECTION cs;
 };
+ 
