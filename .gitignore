@@ -29,3 +29,7 @@
 # Executables
 *.out
 *.app
+.vs
+x64
+TestingField
+.vcxproj
