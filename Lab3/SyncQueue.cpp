@@ -3,61 +3,58 @@
 using namespace std;
 
 SyncQueue::SyncQueue(int nSize) {
-	if (nSize >= 0) {
-		array = new int[nSize];
-		this->nSize = nSize;
-		currentPos = 0;
-		for (int i = 0; i < this->nSize; i++)
-			array[i] = 0;
-	}
-	else {
-		array = nullptr;
-		this->nSize = 0;
-		currentPos = 0;
-	}
+
+	if (0 >= nSize) throw "Ошибка!\nНекорректный размер очереди!";
+
+	array = new int[nSize];
+	this->nSize = nSize;
+	begin = 0;
+	end = 0;
+	for (int i = 0; i < this->nSize; i++)
+		array[i] = 0;
+
 	removeSemaphore = CreateSemaphore(NULL, 0, nSize, NULL);
 	insertSemaphore = CreateSemaphore(NULL, nSize, nSize, NULL);
 	InitializeCriticalSection(&cs);
 }
 
 SyncQueue::~SyncQueue() {
+
 	DeleteCriticalSection(&cs);
 	CloseHandle(insertSemaphore);
 	CloseHandle(removeSemaphore);
-	if (array != nullptr)
-		delete array;
+	if (array != nullptr) {
+		delete[] array;
+		array = nullptr;
+	}
 }
 
 void SyncQueue::Insert(int nElement) {
-	WaitForSingleObject(insertSemaphore, 1000);
+
+	WaitForSingleObject(insertSemaphore, INFINITE);
 
 	EnterCriticalSection(&cs);
-	if (currentPos < nSize) {
-		array[currentPos] = nElement;
-		++currentPos;
 
-		ReleaseSemaphore(removeSemaphore, 1, NULL);
-	}
+	array[end] = nElement;
+	end = (end + 1) % nSize;
+	ReleaseSemaphore(removeSemaphore, 1, NULL);
+
 	LeaveCriticalSection(&cs);
 }
 
 int SyncQueue::Remove() {
+
 	WaitForSingleObject(removeSemaphore, INFINITE);
 
 	EnterCriticalSection(&cs);
-	if (currentPos > 0) {
-		int r = array[currentPos - 1];
-		array[currentPos - 1] = 0;
-		--currentPos;
-
-		LeaveCriticalSection(&cs);
-		ReleaseSemaphore(insertSemaphore, 1, NULL);
-
-		return r;
-	}
-
+	
+	int r = array[begin];
+	array[begin] = 0;
+	begin = (begin + 1) % nSize;
+	ReleaseSemaphore(insertSemaphore, 1, NULL);
+	
 	LeaveCriticalSection(&cs);
 
-	return -1;
+	return r;
 }
 

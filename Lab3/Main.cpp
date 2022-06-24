@@ -3,18 +3,20 @@
 #include <ctime>
 #include "SyncQueue.h"
 
-using namespace std;
+using std::cout;
+using std::cin;
+using std::endl;
 
 HANDLE start;
 
 struct producerData {
 	int serialNumber;
-	int data;
+	int numberOfCycles;
 	SyncQueue* queue;
 };
 
 struct consumerData {
-	int data;
+	int numberOfCycles;
 	SyncQueue* queue;
 };
 
@@ -24,12 +26,13 @@ DWORD WINAPI producer(LPVOID data)
 
 	producerData* pData = (producerData*)data;
 
-	for (int i = 0; i < pData->data; i++)
+	for (int i = 0; i < pData->numberOfCycles; i++)
 	{
-		pData->queue->Insert(pData->serialNumber + 1);
-		cout << "Произведено число: " << pData->serialNumber + 1 << endl;
+		pData->queue->Insert(pData->serialNumber);
+		cout << "Произведено число: " << pData->serialNumber << endl;
 		Sleep(7);
 	}
+
 	return 0;
 }
 
@@ -39,59 +42,91 @@ DWORD WINAPI consumer(LPVOID data)
 
 	consumerData* cData = (consumerData*)data;
 
-	for (int i = 0; i < cData->data; i++)
+	for (int i = 0; i < cData->numberOfCycles; i++)
 	{
 		int x = cData->queue->Remove();
-		cout << "Употреблено число " << x << endl;
+		cout << "Употреблено число: " << x << endl;
+		Sleep(7);
 	}
+
 	return 0;
 }
 
-SyncQueue* inputQueue() {
+SyncQueue* createQueue() {
+
 	int size = 0;
 	cout << "Введите размер очереди: ";
-	cin >> size;
+	while (!(cin >> size))
+	{
+		system("cls");
+		std::cin.clear();
+		while (std::cin.get() != '\n');
+		std::cout << "Ошибка ввода" << std::endl;
+		std::cout << "Введите размер очереди: ";
+	}
 	cout << "\n";
 
 	return new SyncQueue(size);
 }
 
-HANDLE* createProducers(SyncQueue* queue) {
+HANDLE* createProducers(SyncQueue* queue, producerData* pData, int* size) {
+
 	cout << "Введите кол-во потков producer: ";
 	int pNum = 0;
-	cin >> pNum;
+	while (!(cin >> pNum))
+	{
+		system("cls");
+		std::cin.clear();
+		while (std::cin.get() != '\n');
+		std::cout << "Ошибка ввода" << std::endl;
+		std::cout << "Введите кол-во потков producer: ";
+	}
 	cout << "\n";
+	*size = pNum;
 
-	producerData* pData = new producerData[pNum];
+	pData = new producerData[pNum];
 	HANDLE* producers = new HANDLE[pNum];
+
 	for (int i = 0; i < pNum; i++)
 	{
 		cout << "Введите кол-во чисел для потока producer No." << i + 1 << ": ";
-		cin >> pData[i].data;
+		cin >> pData[i].numberOfCycles;
 		cout << "\n";
-		pData[i].serialNumber = i;
+		pData[i].serialNumber = i + 1;
 		pData[i].queue = queue;
-		producers[i] = CreateThread(NULL, 0, producer, (void*)&pData[i], NULL, NULL);
+		producers[i] = CreateThread(NULL, 0, producer, &pData[i], NULL, NULL);
 	}
+
 	return producers;
 }
 
-HANDLE* createConsumers(SyncQueue* queue) {
+HANDLE* createConsumers(SyncQueue* queue, consumerData* cData, int* size) {
+
 	cout << "Введите кол-во потков consumer: ";
 	int cNum = 0;
-	cin >> cNum;
+	while (!(cin >> cNum))
+	{
+		system("cls");
+		std::cin.clear();
+		while (std::cin.get() != '\n');
+		std::cout << "Ошибка ввода" << std::endl;
+		std::cout << "Введите кол-во потков consumer: ";
+	}
 	cout << "\n";
+	*size = cNum;
 
-	consumerData* cData = new consumerData[cNum];
+	cData = new consumerData[cNum];
 	HANDLE* consumers = new HANDLE[cNum];
+
 	for (int i = 0; i < cNum; i++)
 	{
 		cout << "Введите кол-во чисел для потока conusmer No." << i + 1 << ": ";
-		cin >> cData[i].data;
+		cin >> cData[i].numberOfCycles;
 		cout << "\n";
 		cData[i].queue = queue;
-		consumers[i] = CreateThread(NULL, 0, consumer, (void*)&cData[i], NULL, NULL);
+		consumers[i] = CreateThread(NULL, 0, consumer, &cData[i], NULL, NULL);
 	}
+
 	return consumers;
 }
 
@@ -109,16 +144,25 @@ int main() {
 
 	start = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-	SyncQueue* queue = inputQueue();
+	SyncQueue* queue = createQueue();
 
-	HANDLE* producers = createProducers(queue);
-	HANDLE* consumers = createConsumers (queue);
-	
+	consumerData* cData = nullptr;
+	producerData* pData = nullptr;
+	int cSize;
+	int pSize;
+
+	HANDLE* producers = createProducers(queue, pData, &cSize);
+	HANDLE* consumers = createConsumers(queue, cData, &pSize);
+
 	SetEvent(start);
 
-	WaitForMultipleObjects(sizeof(producers) / sizeof(producers[0]), producers, TRUE, INFINITE);
-	WaitForMultipleObjects(sizeof(consumers) / sizeof(consumers[0]), consumers, TRUE, INFINITE);
+	WaitForMultipleObjects(pSize, producers, TRUE, INFINITE);
+	WaitForMultipleObjects(cSize, consumers, TRUE, INFINITE);
 	clear(producers);
 	clear(consumers);
+
+	delete[] cData;
+	delete[] pData;
+
 	return 0;
 }

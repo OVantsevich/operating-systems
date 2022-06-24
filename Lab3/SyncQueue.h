@@ -8,7 +8,8 @@ public:
 	int Remove();
 private:
 	int* array;
-	int currentPos;
+	int begin;
+	int end;
 	int nSize;
 	HANDLE insertSemaphore;
 	HANDLE removeSemaphore;
