@@ -19,10 +19,12 @@ void creator(char outputFileName[], int numsEmployees) {
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
-	CreateProcess(NULL, args, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+	BOOL process = CreateProcess(NULL, args, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+
+	if (!process) throw "Ошибка в создании процесса!!!\n";
 
 	WaitForSingleObject(pi.hProcess, INFINITE);
-	
+
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
 }
@@ -42,10 +44,12 @@ void reporter(char inputFileName[], char outputFileName[], int salary) {
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
-	CreateProcess(NULL, args, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
-	
+	BOOL process = CreateProcess(NULL, args, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+
+	if (!process) throw "Ошибка в создании процесса!!!\n";
+
 	WaitForSingleObject(pi.hProcess, INFINITE);
-	
+
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
 }
@@ -62,7 +66,7 @@ void outEmployee(const char* inputFileName, int employeeNumber) {
 		std::cout << e[i].num << " " << e[i].name << " " << e[i].hours << std::endl;
 	}
 	std::cout << std::endl;
-	
+
 	delete[] e;
 	in.close();
 }
@@ -82,7 +86,7 @@ void outReport(char* reportFileName) {
 
 char* create() {
 
-	char *inputFileName = new char[30];
+	char* inputFileName = new char[30];
 	int employeeNumber;
 
 	std::cout << "Введите имя файла: ";
@@ -136,7 +140,6 @@ int main(int argc, char* argv[]) {
 	{
 		std::cout << error << std::endl;
 	}
-	
 
 	system("pause");
 	return 0;

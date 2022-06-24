@@ -35,6 +35,7 @@ Lab1.tlog
 *.log
 *.txt
 *.recipe
+*.tlog
 
 # Executables
 *.out
