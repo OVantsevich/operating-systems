@@ -88,6 +88,8 @@ DWORD WINAPI polynom(LPVOID param) {
 
     polinomData* data = static_cast<polinomData*>(param);
 
+    if (nullptr == data) return 0;
+
     double result = 0;
     double x = data->x;
     int length = data->length;
@@ -114,16 +116,17 @@ double fractionInput() {
     data[0] = numeratorInput();
     data[1] = denominatorInput(data[0]->x);
 
-    HANDLE polinomNumerator = CreateThread(NULL, 0, polynom, data[0], NULL, NULL);
-    HANDLE polinomDenominator = CreateThread(NULL, 0, polynom, data[1], NULL, NULL);
-   
-    if (polinomNumerator == NULL || polinomDenominator == NULL) {
+    HANDLE handle[2];
+
+    handle[0] = CreateThread(NULL, 0, polynom, data[0], NULL, NULL);
+    handle[1] = CreateThread(NULL, 0, polynom, data[1], NULL, NULL);
+
+    if (handle[0] == NULL || handle[1] == NULL) {
         return GetLastError();
     }
-    WaitForSingleObject(polinomNumerator, INFINITE);
-    WaitForSingleObject(polinomDenominator, INFINITE);
-    CloseHandle(polinomNumerator);
-    CloseHandle(polinomDenominator);
+    WaitForMultipleObjects(2, handle, TRUE, INFINITE);
+    CloseHandle(handle[0]);
+    CloseHandle(handle[1]);
 
     if (0 == data[1]->result) throw "\nОшибка - деление на 0\nПроверьте коэффициенты знаменателя";
 
