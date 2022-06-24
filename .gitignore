@@ -25,11 +25,17 @@
 *.la
 *.a
 *.lib
+*.db
+*.idb
+*.pdb
+.vs
+Lab1.tlog
+*.log
+*.ilk
+*.log
+*.txt
+*.recipe
 
 # Executables
 *.out
-*.app
-.vs
-x64
 TestingField
-.vcxproj
