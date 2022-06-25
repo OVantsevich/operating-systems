@@ -1,4 +1,5 @@
 #include <iostream>
+#include "correctInput.h"
 #include <windows.h>
 
 using std::cin;
@@ -16,38 +17,18 @@ polinomData* numeratorInput() {
 
     polinomData* numeratorData = new polinomData;
 
-    cout << "Введите степень числителя: ";
-    while (!(cin >> numeratorData->length) || numeratorData->length < 0)
-    {
+    correctInput("Введите степень числителя: ", numeratorData->length);
+    while (numeratorData->length < 0) {
         system("cls");
-        std::cin.clear();
-        while (std::cin.get() != '\n');
-        std::cout << "Ошибка ввода!!!" << std::endl;
-        std::cout << "Введите степень числителя: ";
-    }
+        correctInput("Введите степень числителя: ", numeratorData->length);
+    } 
 
-    cout << "Введите коэффициенты числителя: ";
+    cout << "Введите коэффициенты числителя\n";
     numeratorData->coef = new double[numeratorData->length];
-    for (int i = 0; i < numeratorData->length; i++) {
-        while (!(cin >> numeratorData->coef[i]))
-        {
-            system("cls");
-            std::cin.clear();
-            while (std::cin.get() != '\n');
-            std::cout << "Ошибка ввода!!!" << std::endl;
-            std::cout << "Введите коэффициенты числителя: ";
-        }
-    }
+    for (int i = 0; i < numeratorData->length; i++)
+        correctInput("", numeratorData->coef[i]);
 
-    cout << "Введите x: ";
-    while (!(cin >> numeratorData->x))
-    {
-        system("cls");
-        std::cin.clear();
-        while (std::cin.get() != '\n');
-        std::cout << "Ошибка ввода!!!" << std::endl;
-        std::cout << "Введите x: ";
-    }
+    correctInput("Введите x: ", numeratorData->x);
 
     return numeratorData;
 }
@@ -56,28 +37,16 @@ polinomData* denominatorInput(double x) {
 
     polinomData* denominatorData = new polinomData;
 
-    cout << "Введите степень знаменателя: ";
-    while (!(cin >> denominatorData->length) || denominatorData->length < 0)
-    {
+    correctInput("Введите степень знаменателя: ", denominatorData->length);
+    while (denominatorData->length < 0) {
         system("cls");
-        std::cin.clear();
-        while (std::cin.get() != '\n');
-        std::cout << "Ошибка ввода!!!" << std::endl;
-        std::cout << "Введите степень знаменателя: ";
+        correctInput("Введите степень знаменателя: ", denominatorData->length);
     }
 
-    cout << "Введите коэффициенты знаменателя: ";
+    cout << "Введите коэффициенты знаменателя\n";
     denominatorData->coef = new double[denominatorData->length];
-    for (int i = 0; i < denominatorData->length; i++) {
-        while (!(cin >> denominatorData->coef[i]))
-        {
-            system("cls");
-            std::cin.clear();
-            while (std::cin.get() != '\n');
-            std::cout << "Ошибка ввода!!!" << std::endl;
-            std::cout << "Введите коэффициенты знаменателя: ";
-        }
-    }
+    for (int i = 0; i < denominatorData->length; i++)
+        correctInput("", denominatorData->coef[i]);
 
     denominatorData->x = x;
 
