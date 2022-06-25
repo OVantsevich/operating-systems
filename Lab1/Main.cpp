@@ -3,7 +3,13 @@
 #include <string>
 #include <windows.h>
 #include "employee.h"
+#include "CorrectInput.h"
 //#include <crtdbg.h>
+
+using std::cin;
+using std::cout;
+using std::endl;
+using std::string;
 
 void creator(char outputFileName[], int numsEmployees) {
 
@@ -63,9 +69,9 @@ void outEmployee(const char* inputFileName, int employeeNumber) {
 	in.read((char*)e, static_cast<std::streamsize>(sizeof(employee)) * employeeNumber);
 
 	for (int i = 0; i < employeeNumber; i++) {
-		std::cout << e[i].num << " " << e[i].name << " " << e[i].hours << std::endl;
+		cout << e[i].num << " " << e[i].name << " " << e[i].hours << endl;
 	}
-	std::cout << std::endl;
+	cout << endl;
 
 	delete[] e;
 	in.close();
@@ -76,29 +82,46 @@ void outReport(char* reportFileName) {
 	std::ifstream outReport(reportFileName);
 	if (!outReport.is_open()) throw "Файл отчёта не найден!!!\n";
 
-	std::string str;
+	string str;
 	while (std::getline(outReport, str)) {
-		std::cout << str << std::endl;
+		cout << str << endl;
 	}
-	std::cout << std::endl;
+	cout << endl;
 	outReport.close();
+}
+
+char* checkName() {
+
+	string name;
+	cout << "Введите имя файла: ";
+
+	std::getline(cin, name);
+	while (string::npos != name.find(' ') || name.size() > 20) {
+		system("cls");
+		cout << "Неверное имя файла!" << endl;
+		cout << "Введите имя файла: ";
+		std::getline(cin, name);
+	}
+
+	char* res = new char[name.size() + 1];
+	res[name.size()] = '\0';
+	name.copy(res, name.size());
+
+	return res;
 }
 
 char* create() {
 
-	char* inputFileName = new char[30];
+	char* inputFileName;
 	int employeeNumber;
 
-	std::cout << "Введите имя файла: ";
-	std::cin >> inputFileName;
-	std::cout << "Введите кол-во работников: ";
-	std::cin >> employeeNumber;
-	while (employeeNumber < 0) {
-		std::cout << "Некорректное значение!!!\n";
-		std::cout << "Введите кол-во работников: ";
-		std::cin >> employeeNumber;
+	inputFileName = checkName();
+	corretInput<int>("Введите кол-во работников: ", employeeNumber);
+	while ((employeeNumber < 0)) {
+		cout << "Некорректное значение!!!\n";
+		corretInput<int>("Введите кол-во работников: ", employeeNumber);
 	}
-	std::cout << std::endl;
+	cout << endl;
 
 	creator(inputFileName, employeeNumber);
 
@@ -112,11 +135,10 @@ void report(char* inputFileName) {
 	char outputFileName[30];
 	int salary;
 
-	std::cout << "Введите имя файла отчёта: ";
-	std::cin >> outputFileName;
-	std::cout << "Введите зарплату: ";
-	std::cin >> salary;
-	std::cout << std::endl;
+	cout << "Введите имя файла отчёта: ";
+	cin >> outputFileName;
+	corretInput("Введите зарплату: ", salary);
+	cout << endl;
 
 	strcat_s(outputFileName, ".txt");
 
@@ -134,11 +156,11 @@ int main(int argc, char* argv[]) {
 		char* inputFileName = create();
 		report(inputFileName);
 		delete[] inputFileName;
-		//std::cout <<_CrtDumpMemoryLeaks();
+		//cout <<_CrtDumpMemoryLeaks();
 	}
 	catch (const char* error)
 	{
-		std::cout << error << std::endl;
+		cout << error << endl;
 	}
 
 	system("pause");

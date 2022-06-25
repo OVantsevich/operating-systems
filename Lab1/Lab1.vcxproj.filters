@@ -23,5 +23,8 @@
     <ClInclude Include="employee.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="CorrectInput.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
