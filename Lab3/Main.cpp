@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <ctime>
 #include "SyncQueue.h"
+#include <string>
+#include "correctInput.h"
 
 using std::cout;
 using std::cin;
@@ -55,43 +57,42 @@ DWORD WINAPI consumer(LPVOID data)
 SyncQueue* createQueue() {
 
 	int size = 0;
-	cout << "¬ведите размер очереди: ";
-	while (!(cin >> size))
-	{
+	correctInput<int>("¬ведите размер очереди: ", size);
+	while (0 >= size) {
 		system("cls");
-		std::cin.clear();
-		while (std::cin.get() != '\n');
-		std::cout << "ќшибка ввода" << std::endl;
-		std::cout << "¬ведите размер очереди: ";
+		cout << " екорректный размер очереди!!!" << endl;
+		correctInput<int>("¬ведите размер очереди: ", size);
 	}
-	cout << "\n";
 
 	return new SyncQueue(size);
 }
 
 HANDLE* createProducers(SyncQueue* queue, producerData* pData, int* size) {
 
-	cout << "¬ведите кол-во потков producer: ";
 	int pNum = 0;
-	while (!(cin >> pNum))
-	{
+	correctInput<int>("¬ведите кол-во потков producer: ", pNum);
+	while (0 >= pNum) {
 		system("cls");
-		std::cin.clear();
-		while (std::cin.get() != '\n');
-		std::cout << "ќшибка ввода" << std::endl;
-		std::cout << "¬ведите кол-во потков producer: ";
+		cout << " екорректное кол-во потков producer!!!" << endl;
+		correctInput<int>("¬ведите кол-во потков producer: ", pNum);
 	}
-	cout << "\n";
 	*size = pNum;
-
+	
 	pData = new producerData[pNum];
 	HANDLE* producers = new HANDLE[pNum];
 
 	for (int i = 0; i < pNum; i++)
 	{
-		cout << "¬ведите кол-во чисел дл€ потока producer No." << i + 1 << ": ";
-		cin >> pData[i].numberOfCycles;
-		cout << "\n";
+		std::string message("¬ведите кол-во чисел дл€ потока producer No.");
+		message += std::to_string(i + 1);
+		message += ": ";
+		correctInput<int>(message.c_str(), pData[i].numberOfCycles);
+		while (0 >= pData[i].numberOfCycles) {
+			system("cls");
+			cout << " екорректное кол-во чисел дл€ потока!!!" << endl;
+			correctInput<int>(message.c_str(), pData[i].numberOfCycles);
+		}
+
 		pData[i].serialNumber = i + 1;
 		pData[i].queue = queue;
 		producers[i] = CreateThread(NULL, 0, producer, &pData[i], NULL, NULL);
@@ -102,17 +103,13 @@ HANDLE* createProducers(SyncQueue* queue, producerData* pData, int* size) {
 
 HANDLE* createConsumers(SyncQueue* queue, consumerData* cData, int* size) {
 
-	cout << "¬ведите кол-во потков consumer: ";
 	int cNum = 0;
-	while (!(cin >> cNum))
-	{
+	correctInput<int>("¬ведите кол-во потков consumer: ", cNum);
+	while (0 >= cNum) {
 		system("cls");
-		std::cin.clear();
-		while (std::cin.get() != '\n');
-		std::cout << "ќшибка ввода" << std::endl;
-		std::cout << "¬ведите кол-во потков consumer: ";
+		cout << " екорректное кол-во потков consumer!!!" << endl;
+		correctInput<int>("¬ведите кол-во потков consumer: ", cNum);
 	}
-	cout << "\n";
 	*size = cNum;
 
 	cData = new consumerData[cNum];
@@ -120,9 +117,16 @@ HANDLE* createConsumers(SyncQueue* queue, consumerData* cData, int* size) {
 
 	for (int i = 0; i < cNum; i++)
 	{
-		cout << "¬ведите кол-во чисел дл€ потока conusmer No." << i + 1 << ": ";
-		cin >> cData[i].numberOfCycles;
-		cout << "\n";
+		std::string message("¬ведите кол-во чисел дл€ потока conusmer No.");
+		message += std::to_string(i + 1);
+		message += ": ";
+		correctInput<int>(message.c_str(), cData[i].numberOfCycles);
+		while (0 >= cData[i].numberOfCycles) {
+			system("cls");
+			cout << " екорректное кол-во чисел дл€ потока!!!" << endl;
+			correctInput<int>(message.c_str(), cData[i].numberOfCycles);
+		}
+
 		cData[i].queue = queue;
 		consumers[i] = CreateThread(NULL, 0, consumer, &cData[i], NULL, NULL);
 	}
@@ -130,10 +134,10 @@ HANDLE* createConsumers(SyncQueue* queue, consumerData* cData, int* size) {
 	return consumers;
 }
 
-void clear(HANDLE* data) {
+void clear(HANDLE* data, int dataSize) {
 
 	if (data != nullptr) {
-		for (int i = 0; i < sizeof(data) / sizeof(data[0]); i++)
+		for (int i = 0; i < dataSize; i++)
 			CloseHandle(data[i]);
 		delete data;
 	}
@@ -158,8 +162,8 @@ int main() {
 
 	WaitForMultipleObjects(pSize, producers, TRUE, INFINITE);
 	WaitForMultipleObjects(cSize, consumers, TRUE, INFINITE);
-	clear(producers);
-	clear(consumers);
+	clear(producers, pSize);
+	clear(consumers, cSize);
 
 	delete[] cData;
 	delete[] pData;

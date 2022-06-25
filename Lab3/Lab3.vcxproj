@@ -143,6 +143,7 @@
     <ClCompile Include="SyncQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="correctInput.h" />
     <ClInclude Include="SyncQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

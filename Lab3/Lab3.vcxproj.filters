@@ -26,5 +26,8 @@
     <ClInclude Include="SyncQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="correctInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
