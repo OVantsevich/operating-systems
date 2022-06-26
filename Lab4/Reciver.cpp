@@ -2,7 +2,6 @@
 #include <fstream>
 #include "Common/Readers.h"
 #include "Common/Message.h"
-#include "correctInput.h"
 
 using std::fstream;
 using std::ofstream;
