@@ -1,120 +1,143 @@
-#include <Windows.h>
-#include <filesystem>
-#include <iostream>
+﻿#include <Windows.h>
 #include <fstream>
-namespace fs=std::filesystem;
+#include "Common/Readers.h"
+#include "Common/Message.h"
+#include "correctInput.h"
 
-#pragma warning(disable : 4996)
+using std::fstream;
+using std::ofstream;
+using std::ifstream;
 
-using namespace std;
+bool read(string& fileName, HANDLE& mutex, HANDLE& semaphoreRead, HANDLE& semaphoreWrite) {
+	WaitForSingleObject(semaphoreRead, INFINITE);
+	WaitForSingleObject(mutex, INFINITE);
 
-CRITICAL_SECTION cs;
-HANDLE writeSemaphore;
-HANDLE readSemaphore;
-int messagesNumber;
-int senderNumber;
-char fileName[20];
-fstream* file;
+	string text;
+	string name;
 
-struct Message {
-	char name[10];
-	char text[20];
-
-	Message() {}
-
-	Message(char* name, char* text) {
-		if (name != nullptr)
-			strcpy(this->name, name);
-		if (text != nullptr)
-			strcpy(this->text, text);
+	Message* message = new Message(name, text);
+	Meta* meta = new Meta;
+	fstream f(fileName, std::ios::binary | std::ios::out | std::ios::in);
+	if (!f.is_open()) {
+		cout << "Ошибка!\nИскомый файл не найден!" << endl;
+		return false;
 	}
-};
 
-void read() {
-	WaitForSingleObject(writeSemaphore, INFINITE);
-	EnterCriticalSection(&cs);
+	f.seekp(0, std::ios::beg);
+	f.read((char*)meta, sizeof(Meta));
+	f.seekg(sizeof(Meta) + meta->begin * sizeof(Message), std::ios::beg);
+	f.read((char*)message, sizeof(Message));
 
-	Message* message = new Message();
+	meta->begin = (meta->begin + 1 ) % meta->numberOfMessage;
+	f.seekp(0, std::ios::beg);
+	f.write((char*)meta, sizeof(Meta));
+	cout << message;
 
-	file->seekg(0, ios::end);
-	int length = file->tellg();
-	file->seekg(length - sizeof(Message), ios::beg);
+	f.close();
+	delete meta;
+	delete message;
 
-	file->read((char*)message, sizeof(Message));
-	cout << "��� : " << message->name << "\n����� : " << message->text << "\n"<< endl;
+	ReleaseMutex(mutex);
+	ReleaseSemaphore(semaphoreWrite, 1, NULL);
 
-	char* fullName = new char[25];
-	strcpy(fullName, fileName);
-	strcat(fullName, ".bin");
-
-	std::filesystem::resize_file(fileName, length - sizeof(Message));
-
-	LeaveCriticalSection(&cs);
-	ReleaseSemaphore(readSemaphore, 1, NULL);
+	return true;
 }
 
-void input() {
+void input(string& fileName, int& numberOfMessage, int& numberOfSender) {
 
-	cout << "������� ��� ����� : ";
-	cin >> fileName;
-	cout << "\n";
+	StringReader sr;
+	IntReader ir;
 
-	cout << "������� ���-�� ��������� : ";
-	cin >> messagesNumber;
-	cout << "\n";
-
-	cout << "������� ���-�� �������� sender : ";
-	cin >> senderNumber;
-	cout << "\n";
-	ofstream fout(fileName, ios::binary);
-	fout.close();
+	sr.read(fileName, "Введите имя файла: ", [](string& str) {if (str.find(' ') != string::npos || str.size() > 15) return true; return false; }, "Невалидное имя файла!");
+	ir.read(numberOfMessage, "Введите кол-во сообщейний: ", [](int& i) {return i < 1; }, "Невалидное кол-во сообщений!");
+	ir.read(numberOfSender, "Введите кол-во потоков Sender: ", [](int& i) {return i < 1; }, "Невалидное кол-во потоков Sender:!");
 }
 
-void createProcesses() {
+bool createBinaryFile(const string& fileName, const int& numberOfMessage) {
+
+	ofstream file(fileName, std::ios::binary);
+	if(!file.is_open()) {
+		cout << "Ошибка!\nИскомый файл не найден!" << endl;
+		return false;
+	}
+	Message* message = new Message[numberOfMessage];
 	
+	Meta* meta = new Meta(0, 0, numberOfMessage);
+	file.write((char*)meta, sizeof(Meta));
+	file.write((char*)message, sizeof(Message) * numberOfMessage);
+
+	delete meta;
+	delete[] message;
+	file.close();
+	return true;
 }
 
-void main() {
+bool Sender(string& fileName, string& semaphoreRead, string& semaphoreWrite) {
+
+	string args = "Sender.exe " + fileName + " " + semaphoreRead + " " + semaphoreWrite;
+
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(STARTUPINFO));
+	si.cb = sizeof(STARTUPINFO);
+	BOOL process = CreateProcess(NULL, (char*)args.c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+
+	if (!process) {
+		cout << "ошибка при создании процесса!!!" << endl;
+		return false;
+	}
+
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+
+	return true;
+}
+
+bool createSenders(const int& numberOfSender, string& fileName, string& semaphoreRead, string& semaphoreWrite) {
+	for (int i = 0; i < numberOfSender; i++) {
+		if (!Sender(fileName, semaphoreRead, semaphoreWrite)) return false;
+	}
+	return true;
+}
+
+bool readCycle(string& fileName, HANDLE& mutex, HANDLE& semaphoreRead, HANDLE& semaphoreWrite) {
+
+	IntReader ir;
+	int chouse = 0;
+	ir.read(chouse, "1 - Чтение\n2 - выход\nВвод: ", [](int& i) {return i != 1 && i != 2; }, "Неверный ввод!");
+	while (chouse != 2) {
+		system("cls");
+		if(!read(fileName, mutex, semaphoreRead, semaphoreWrite)) return false;
+		ir.read(chouse, "1 - Чтение\n2 - выход\nВвод: ", [](int& i) {return i != 1 && i != 2; }, "Неверный ввод!");
+	}
+	return true;
+}
+
+int main() {
 	setlocale(LC_ALL, ".1251");
 
-	input();
-	STARTUPINFO* si = new STARTUPINFO[senderNumber];
-	PROCESS_INFORMATION* pi = new PROCESS_INFORMATION[senderNumber];
+	string fileName;
+	int numberOfMessage = 0;
+	int numberOfSender = 0;
+	string semaphoreReadS("semaphoreRead");
+	string semaphoreWriteS("semaphoreWrite");
+	string endOfSendersExeptionS("endOfSendersExeption");
 
-	char data[50] = "Sender.exe ";
-	strcat(data, fileName);
-	strcat(data, " ");
-	for (int i = 0; i < senderNumber; i++) {
-		ZeroMemory(&si[i], sizeof(STARTUPINFO));
-		si[i].cb = sizeof(STARTUPINFO);
+	input(fileName, numberOfMessage, numberOfSender);
 
-		CreateProcess(NULL, data, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si[i], &pi[i]);
-	}
-	
-	writeSemaphore = CreateSemaphore(NULL, 0, messagesNumber, "Write");
-	readSemaphore = CreateSemaphore(NULL, messagesNumber, messagesNumber, "Read");
-	InitializeCriticalSection(&cs);
+	HANDLE semaphoreRead = CreateSemaphore(NULL, 0, numberOfMessage, (char*)semaphoreReadS.c_str());
+	HANDLE semaphoreWrite = CreateSemaphore(NULL, numberOfMessage, numberOfMessage, (char*)semaphoreWriteS.c_str());
+	HANDLE mutex = CreateMutex(NULL, FALSE, (char*)fileName.c_str());
 
+	if (!createBinaryFile(fileName, numberOfMessage)) return 0;
 
+	if (!createSenders(numberOfSender, fileName, semaphoreReadS, semaphoreWriteS)) return 0;
 
-	system("cls");
+	if (!readCycle(fileName, mutex, semaphoreRead, semaphoreWrite)) return 0;
 
-	cout << "1 - ������\n";
-	cout << "2 - �����\n";
-	int i;
-	file = new fstream(fileName, ios::binary | ios::in | ios::out);
-	while (true) {
+	CloseHandle(semaphoreRead);
+	CloseHandle(semaphoreWrite);
+	CloseHandle(mutex);
 
-		cout << "������� ������� : ";
-		cin >> i;
-		
-		if (i % 2)
-			read();
-		else
-			break;
-	}
-
-	file->close();
-	delete file;
-
+	return 0;
 }
